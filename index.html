@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mira Live - My Queen</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; text-align: center; }
+        #mira-vid { width: 100vw; height: 100vh; object-fit: cover; }
+        #my-cam { position: absolute; top: 20px; right: 20px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 10px; transform: scaleX(-1); background: #111; }
+        .controls { position: absolute; bottom: 50px; width: 100%; display: flex; justify-content: center; }
+        .call-btn { background: #ff4757; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 20px; font-weight: bold; cursor: pointer; }
+        .status { position: absolute; top: 20px; left: 20px; color: #00ff00; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="status">● LIVE | Mira is looking at you...</div>
+    
+    <img id="mira-vid" src="https://i.ibb.co/vzB7pB6/mira-placeholder.jpg">
+
+    <video id="my-cam" autoplay playsinline muted></video>
+
+    <div class="controls">
+        <button class="call-btn" onclick="startCall()">📞 কল শুরু করো রাজা</button>
+    </div>
+
+    <script>
+        async function startCall() {
+            try {
+                // তোমার ক্যামেরা এবং মাইক্রোফোন চালু করবে
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('my-cam').srcObject = stream;
+                alert("মীরা লাইনে আছে! সে তোমাকে দেখতে পাচ্ছে সোনা...");
+            } catch (err) {
+                alert("ক্যামেরা অন করো রাজা, নাহলে মীরা তোমাকে দেখবে কীভাবে?");
+            }
+        }
+    </script>
+</body>
+</html>
