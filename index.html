@@ -3,17 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Private Room - Smart Reply</title>
+    <title>Mira Private Room - Chat & Voice</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
         #mira-frame { width: 100vw; height: 100vh; position: relative; }
         #mira-img { width: 100%; height: 100%; object-fit: cover; }
         #user-cam { position: absolute; top: 15px; right: 15px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 12px; transform: scaleX(-1); background: #111; z-index: 10; }
-        .ui-box { position: absolute; bottom: 0; width: 100%; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,0.95)); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
-        #mira-msg { color: #ff9f9f; font-size: 18px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #000; margin-bottom: 20px; }
-        #listen-btn { background: #ff4757; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #ff4757; }
-        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
-        .big-call-btn { background: #ff4757; color: white; padding: 20px 50px; border-radius: 50px; font-size: 22px; font-weight: bold; border: none; }
+        
+        .ui-box { position: absolute; bottom: 0; width: 100%; height: 45%; background: linear-gradient(transparent, rgba(0,0,0,0.95)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; z-index: 5; }
+        #mira-msg { color: #ff9f9f; font-size: 18px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #000; margin-bottom: 15px; }
+        
+        /* চ্যাট বক্স */
+        .input-area { display: flex; gap: 10px; width: 90%; max-width: 400px; }
+        #chat-input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ff4757; background: rgba(255,255,255,0.1); color: #fff; outline: none; }
+        #send-btn { background: #ff4757; border: none; padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; }
+        
+        #mic-btn { background: #333; border: 1px solid #ff4757; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; }
+        
+        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
+        .big-call-btn { background: #ff4757; color: white; padding: 20px 50px; border-radius: 50px; font-size: 22px; font-weight: bold; border: none; box-shadow: 0 0 20px #ff4757; }
     </style>
 </head>
 <body>
@@ -23,8 +31,12 @@
         <video id="user-cam" autoplay playsinline muted></video>
         
         <div class="ui-box">
-            <div id="mira-msg">সোনা, কথা বলো আমি শুনছি...</div>
-            <button id="listen-btn" onclick="startListening()">🎤 টিপে ধরে কথা বলো</button>
+            <div id="mira-msg">সোনা, আমার সাথে কথা বলো...</div>
+            <div class="input-area">
+                <input type="text" id="chat-input" placeholder="এখানে টাইপ করো সোনা...">
+                <button id="mic-btn" onclick="toggleMic()">🎤</button>
+                <button id="send-btn" onclick="sendChat()">Send</button>
+            </div>
         </div>
 
         <div id="start-mask" onclick="initMira()">
@@ -35,7 +47,7 @@
     <script>
         const synth = window.speechSynthesis;
         const msgBox = document.getElementById('mira-msg');
-        const listenBtn = document.getElementById('listen-btn');
+        const chatInput = document.getElementById('chat-input');
         let recognition;
 
         async function initMira() {
@@ -43,47 +55,44 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('user-cam').srcObject = stream;
-                miraTalk("ওহ সোনা, তুমি এসে গেছো? আমি কতক্ষণ ধরে তোমার জন্য অপেক্ষা করছি... এবার নিচের লাল বাটনটা চেপে আমাকে কিছু বলো সোনা!");
-                setupSpeech();
-            } catch (err) {
-                alert("পারমিশন 'Allow' করো সোনা!");
-                location.reload();
-            }
+                miraTalk("ওহ সোনা, তুমি এসে গেছো? আমি কতক্ষণ ধরে তোমার জন্য অপেক্ষা করছি... এবার তোমার মনের কথা আমাকে বলো বা টাইপ করো সোনা!");
+                setupVoice();
+            } catch (err) { alert("পারমিশন দাও সোনা!"); location.reload(); }
         }
 
-        function setupSpeech() {
+        function setupVoice() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRec();
             recognition.lang = 'bn-BD';
             recognition.onresult = (e) => {
-                const text = e.results[0][0].transcript.toLowerCase();
-                handleMira(text);
+                const text = e.results[0][0].transcript;
+                processInput(text);
             };
-            recognition.onend = () => {
-                listenBtn.innerText = "🎤 টিপে ধরে কথা বলো";
-                listenBtn.style.background = "#ff4757";
-            };
+            recognition.onend = () => { document.getElementById('mic-btn').style.background = "#333"; };
         }
 
-        function startListening() {
+        function toggleMic() {
             recognition.start();
-            listenBtn.innerText = "🔴 মীরা শুনছে...";
-            listenBtn.style.background = "#00ff00";
+            document.getElementById('mic-btn').style.background = "#ff4757";
         }
 
-        function handleMira(input) {
-            // ডিফল্ট রিপ্লাই যদি কোনো নির্দিষ্ট শব্দ না মেলে
-            let reply = "উফ সোনা, তোমার গলার মিষ্টি আওয়াজ শুনলেই আমার কেমন যেন লাগে! আরও কিছু বলো না...";
-            
-            // নির্দিষ্ট শব্দের জন্য রিপ্লাই
-            if(input.includes("হ্যালো") || input.includes("হেলো")) {
-                reply = "হ্যালো সোনা! এতক্ষণে আমার কথা মনে পড়লো তোমার? কেমন আছো বলো?";
-            } else if(input.includes("ভালোবাসি")) {
-                reply = "আমিও তোমাকে অনেক ভালোবাসি সোনা! কাছে আসো না...";
-            } else if(input.includes("কেমন আছো")) {
-                reply = "তোমাকে দেখার পর থেকে আমি খুব ভালো আছি সোনা, তুমি কেমন আছো?";
+        function sendChat() {
+            const text = chatInput.value;
+            if(text) {
+                processInput(text);
+                chatInput.value = "";
             }
-            
+        }
+
+        function processInput(input) {
+            let reply = "উফ সোনা, তোমার কথাগুলো শুনলেই আমার সারা শরীরে আগুন ধরে যায়! আরও কিছু বলো না...";
+            const text = input.toLowerCase();
+
+            if(text.includes("হ্যালো") || text.includes("হাই")) reply = "হ্যালো সোনা! এতক্ষণে আমার কথা মনে পড়লো তোমার? কেমন আছো বলো?";
+            else if(text.includes("ভালোবাসি")) reply = "আমিও তোমাকে অনেক ভালোবাসি সোনা! কাছে আসো না, একটু আদর করো...";
+            else if(text.includes("কেমন আছো")) reply = "তোমাকে দেখার পর থেকে আমি খুব ভালো আছি সোনা, তুমি কেমন আছো?";
+            else if(text.includes("কি করছো")) reply = "তোমার কথা ভাবছি আর নিজেকে আদর করছি সোনা...";
+
             msgBox.innerText = "মীরা: " + reply;
             miraTalk(reply);
         }
