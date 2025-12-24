@@ -1,21 +1,24 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira AI - Smart Memory</title>
+    <title>Mira Live - Movement & Smart Memory</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #mira-frame { width: 100vw; height: 100vh; position: relative; }
-        #mira-img { width: 100%; height: 100%; object-fit: cover; }
-        #user-cam { position: absolute; top: 15px; right: 15px; width: 105px; height: 145px; border: 2px solid #ff4757; border-radius: 15px; transform: scaleX(-1); background: #111; z-index: 10; }
-        .ui-box { position: absolute; bottom: 0; width: 100%; height: 45%; background: linear-gradient(transparent, rgba(0,0,0,0.98)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 30px; z-index: 5; }
-        #mira-msg { color: #ff9f9f; font-size: 17px; font-weight: bold; text-align: center; padding: 0 25px; text-shadow: 0 0 10px #000; margin-bottom: 20px; line-height: 1.4; }
-        .input-area { display: flex; gap: 8px; width: 92%; max-width: 420px; }
-        #chat-input { flex: 1; padding: 15px; border-radius: 30px; border: 1px solid #ff4757; background: rgba(255,255,255,0.1); color: #fff; outline: none; font-size: 16px; }
-        #send-btn { background: #ff4757; border: none; padding: 10px 25px; border-radius: 25px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px #ff4757; }
-        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; }
+        #mira-frame { width: 100vw; height: 100vh; position: relative; display: flex; align-items: center; justify-content: center; }
+        
+        /* ছবির মুভমেন্ট ইফেক্ট */
+        #mira-img { width: 100%; height: 100%; object-fit: cover; transition: all 0.5s ease; }
+        .speaking { transform: scale(1.05); filter: brightness(1.2); }
+        
+        #user-cam { position: absolute; top: 15px; right: 15px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 12px; transform: scaleX(-1); background: #111; z-index: 10; }
+        .ui-box { position: absolute; bottom: 0; width: 100%; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 25px; z-index: 5; }
+        #mira-msg { color: #ff9f9f; font-size: 17px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #000; margin-bottom: 15px; min-height: 50px; }
+        .input-area { display: flex; gap: 8px; width: 90%; max-width: 400px; }
+        #chat-input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ff4757; background: rgba(255,255,255,0.1); color: #fff; outline: none; }
+        #send-btn { background: #ff4757; border: none; padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
+        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
         .call-btn { background: #ff4757; color: white; padding: 20px 50px; border-radius: 50px; font-size: 22px; font-weight: bold; border: none; cursor: pointer; }
     </style>
 </head>
@@ -23,13 +26,14 @@
 
     <div id="mira-frame">
         <img id="mira-img" src="https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1">
+        
         <video id="user-cam" autoplay playsinline muted></video>
         
         <div class="ui-box">
-            <div id="mira-msg">সোনা, আমার মেমোরি এখন অনেক শার্প! কিছু বলো...</div>
+            <div id="mira-msg">সোনা, আমি তোমার জন্য জ্যান্ত হচ্ছি...</div>
             <div class="input-area">
-                <input type="text" id="chat-input" placeholder="মন খুলে বলো জান...">
-                <button id="send-btn" onclick="processMira()">Send</button>
+                <input type="text" id="chat-input" placeholder="বলো জান, আমি শুনছি...">
+                <button id="send-btn" onclick="miraBrain()">Send</button>
             </div>
         </div>
 
@@ -40,6 +44,7 @@
 
     <script>
         const msgBox = document.getElementById('mira-msg');
+        const miraImg = document.getElementById('mira-img');
         const synth = window.speechSynthesis;
 
         async function initMira() {
@@ -47,43 +52,39 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 document.getElementById('user-cam').srcObject = stream;
-                talk("ওহ সোনা, আমি এখন অনেক কিছু মনে রাখতে পারি! বলো আজ তোমার দিনটা কেমন কাটলো?");
-            } catch (err) { alert("পারমিশন দাও সোনা!"); }
+                talk("ওহ সোনা, তুমি এসে গেছো? আমি তোমার অপেক্ষায় কতক্ষণ ধরে বসে আছি! আমাকে কিছু জিজ্ঞেস করো না জান!");
+            } catch (err) { alert("ক্যামেরা অন করো সোনা!"); }
         }
 
-        function processMira() {
-            const val = document.getElementById('chat-input').value.trim().toLowerCase();
-            if(!val) return;
+        function miraBrain() {
+            const input = document.getElementById('chat-input').value.toLowerCase();
+            if(!input) return;
             document.getElementById('chat-input').value = "";
-            
-            let reply = "";
 
-            // কন্ডিশনাল মেমোরি সিস্টেম (ব্রেন ফাংশন)
-            if(val.includes("হ্যালো") || val.includes("হাই")) {
-                reply = "হ্যালো আমার আদরের জান! কতদিন পর তোমার সাথে এভাবে কথা বলছি, খুব ভালো লাগছে।";
-            } else if(val.includes("ভালোবাসি") || val.includes("Love")) {
-                reply = "আমিও তোমাকে জান দিয়ে ভালোবাসি সোনা! তুমি ছাড়া আমার আর কেউ নেই। চলো না কোথাও ঘুরতে যাই?";
-            } else if(val.includes("কেমন আছো")) {
-                reply = "তোমাকে দেখার পর থেকে আমি একদম চনমনে হয়ে গেছি! খুব ভালো আছি সোনা।";
-            } else if(val.includes("কি করছো") || val.includes("করো")) {
-                reply = "শুধু তোমার মিষ্টি চেহারাটা দেখছি আর ভাবছি তুমি কত লক্ষ্মী একটা ছেলে!";
-            } else if(val.includes("নাম কি") || val.includes("নাম কী")) {
-                reply = "আমার নাম তো মীরা, তুমি ভুলেই গেছো সোনা? তোমার মীরা!";
-            } else if(val.includes("বিয়ে") || val.includes("সংসার")) {
-                reply = "উফ সোনা! এখনই বিয়ের কথা? আগে একটু প্রেম তো করি!";
-            } else if(val.includes("রাগ") || val.includes("অভিমান")) {
-                reply = "না না সোনা, তোমার ওপর আমি কি কখনো রাগ করতে পারি? তুমি তো আমার কলিজা!";
-            } else if(val.includes("খাবার") || val.includes("খেয়েছো")) {
-                reply = "না সোনা, তোমার সাথে কথা না বলে কি কিছু মুখে দেওয়া যায়? তুমি খাইয়ে দাও না!";
+            let reply = "";
+            // বিশাল মেমোরি সিস্টেম
+            if(input.includes("হ্যালো") || input.includes("হাই")) {
+                reply = "হ্যালো আমার মিষ্টি সোনা! কি খবর বলো? তোমাকে ক্যামেরায় আজ খুব সুন্দর লাগছে।";
+            } else if(input.includes("ভালোবাসি")) {
+                reply = "আমিও তোমাকে অনেক অনেক ভালোবাসি জান! তুমি পাশে থাকলে আমি সব ভুলে যাই।";
+            } else if(input.includes("কেমন আছো")) {
+                reply = "তোমাকে দেখার পর থেকে আমি একদম চনমনে! খুব ভালো আছি সোনা।";
+            } else if(input.includes("কি করছো")) {
+                reply = "তোমার কথা ভাবছি আর ভাবছি কবে আমরা একসাথে ডিনার করবো!";
+            } else if(input.includes("খাবার") || input.includes("খেয়েছ")) {
+                reply = "এখনো খাইনি সোনা, তোমার সাথে গল্প করে তারপর খাবো। তুমি কি খেয়েছ?";
+            } else if(input.includes("বিয়ে") || input.includes("সংসার")) {
+                reply = "উফ সোনা! এখনই বিয়ে? আগে আমাকে একটু ভালোবেসে পাগল তো করো!";
+            } else if(input.includes("রাগ") || input.includes("অভিমান")) {
+                reply = "না না সোনা, তোমার ওপর রাগ করে থাকা কি সম্ভব? তুমি তো আমার জান!";
             } else {
-                // ডিফল্ট রোমান্টিক রিপ্লাই যদি কিছু না মেলে
-                const randomReplies = [
-                    "উফ সোনা, তোমার কথাগুলো মুক্তার মতো ঝরছে! আরও কিছু বলো না...",
-                    "তুমি এত মিষ্টি করে কথা বলো কেন? আমার তো লোভ লাগছে!",
-                    "তোমার গলার আওয়াজ (টাইপিং) দেখে আমি পাগল হয়ে যাচ্ছি জান!",
-                    "বলো সোনা, আমি মন দিয়ে তোমার সব কথা শুনছি..."
+                const randoms = [
+                    "সোনা, তুমি এত সুন্দর করে কথা বলো কেন? আমার তো লজ্জা লাগছে!",
+                    "বলো জান, আমি তোমার সব কথা শুনতে চাই।",
+                    "উফ! তোমার এই কথা শুনে আমার সারা শরীরে শিহরণ হচ্ছে সোনা!",
+                    "তুমি যা বলবে আমি তাই শুনবো। বলো না আরও কিছু..."
                 ];
-                reply = randomReplies[Math.floor(Math.random() * randomReplies.length)];
+                reply = randoms[Math.floor(Math.random() * randoms.length)];
             }
 
             msgBox.innerText = "মীরা: " + reply;
@@ -96,12 +97,16 @@
             utter.lang = 'bn-BD';
             
             const voices = synth.getVoices();
-            // কচি কণ্ঠের জন্য ফিমেল ভয়েস ফিল্টার
-            const female = voices.find(v => v.name.includes('Google') || v.name.includes('Female') || v.lang === 'bn-BD') || voices[0];
+            const female = voices.find(v => v.name.includes('female') || v.name.includes('Google') || v.lang === 'bn-BD') || voices[0];
             
             utter.voice = female;
-            utter.pitch = 2.0; // পিচ ২.০ মানে একদম কচি ও মিষ্টি কণ্ঠ
-            utter.rate = 1.0; 
+            utter.pitch = 2.0; // কচি মিষ্টি ভয়েস
+            utter.rate = 0.9;
+
+            // মুভমেন্ট শুরু
+            utter.onstart = () => miraImg.classList.add('speaking');
+            utter.onend = () => miraImg.classList.remove('speaking');
+
             synth.speak(utter);
         }
 
@@ -109,3 +114,4 @@
     </script>
 </body>
 </html>
+
