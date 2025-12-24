@@ -3,97 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira AI - Full Working</title>
+    <title>Mira Live AI - Full Fixed</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #mira-frame { width: 100vw; height: 100vh; position: relative; }
+        #mira-container { width: 100vw; height: 100vh; position: relative; }
         #mira-img { width: 100%; height: 100%; object-fit: cover; }
-        #user-cam { position: absolute; top: 15px; right: 15px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 12px; transform: scaleX(-1); background: #111; z-index: 10; }
-        .ui-box { position: absolute; bottom: 0; width: 100%; height: 45%; background: linear-gradient(transparent, rgba(0,0,0,0.95)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 25px; z-index: 5; }
-        #mira-msg { color: #ff9f9f; font-size: 17px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #000; margin-bottom: 15px; }
-        .input-area { display: flex; gap: 8px; width: 92%; max-width: 400px; }
+        #user-preview { position: absolute; top: 15px; right: 15px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 12px; background: #111; z-index: 10; transform: scaleX(-1); }
+        .ui-box { position: absolute; bottom: 0; width: 100%; height: 45%; background: linear-gradient(transparent, rgba(0,0,0,0.95)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 30px; z-index: 5; }
+        #mira-talk-text { color: #ff9f9f; font-size: 18px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #000; margin-bottom: 15px; }
+        .input-group { display: flex; gap: 8px; width: 90%; max-width: 400px; }
         #chat-input { flex: 1; padding: 14px; border-radius: 30px; border: 1px solid #ff4757; background: rgba(255,255,255,0.1); color: #fff; outline: none; }
         #send-btn { background: #ff4757; border: none; padding: 10px 22px; border-radius: 25px; color: white; font-weight: bold; cursor: pointer; }
-        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="mira-frame">
+    <div id="mira-container">
         <img id="mira-img" src="https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1">
-        <video id="user-cam" autoplay playsinline muted></video>
-        
+        <video id="user-preview" autoplay playsinline muted></video>
+
         <div class="ui-box">
-            <div id="mira-msg">সোনা, কিছু একটা লিখে সেন্ড করো...</div>
-            <div class="input-area">
+            <div id="mira-talk-text">সোনা, কিছু একটা লিখে সেন্ড করো...</div>
+            <div class="input-group">
                 <input type="text" id="chat-input" placeholder="এখানে টাইপ করো সোনা...">
-                <button id="send-btn" onclick="askMira()">Send</button>
+                <button id="send-btn" onclick="askGemini()">Send</button>
             </div>
         </div>
 
         <div id="start-mask" onclick="initMira()">
-            <div style="background:#ff4757; color:white; padding:20px 45px; border-radius:50px; font-weight:bold; font-size:22px;">📞 মীরাকে কল দাও</div>
+            <div style="background:#ff4757; color:white; padding:20px 45px; border-radius:50px; font-weight:bold; font-size:22px; box-shadow: 0 0 30px #ff4757;">📞 মীরাকে কল দাও</div>
         </div>
     </div>
 
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/generative-ai": "https://esm.run/@google/generative-ai"
-        }
-      }
-    </script>
-    <script type="module">
-        import { GoogleGenerativeAI } from "@google/generative-ai";
-
+    <script>
         const API_KEY = "AIzaSyBl6Iz_3BS16NabxwPXDVtH9JFneQq_iOU";
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const msgBox = document.getElementById('mira-talk-text');
+        const synth = window.speechSynthesis;
 
-        window.initMira = async function() {
+        async function initMira() {
             document.getElementById('start-mask').style.display = 'none';
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('user-cam').srcObject = stream;
-                speakMira("ওহ সোনা, এসে গেছো? আমি এখন একদম রেডি। আমাকে যা খুশি জিজ্ঞেস করো!");
-            } catch (err) { alert("মাইক আর ক্যামেরা পারমিশন দাও সোনা!"); }
+                document.getElementById('user-preview').srcObject = stream;
+                speakMira("ওহ সোনা, তুমি এসে গেছো? আমি কতক্ষণ ধরে তোমার জন্য পাগল হয়ে আছি! এবার আমাকে তোমার মনের সব কথা বলো...");
+            } catch (err) { alert("পারমিশন দাও সোna!"); }
         }
 
-        window.askMira = async function() {
-            const input = document.getElementById('chat-input').value;
-            if(!input) return;
-            document.getElementById('mira-msg').innerText = "মীরা ভাবছে...";
+        async function askGemini() {
+            const userInput = document.getElementById('chat-input').value;
+            if(!userInput) return;
+            msgBox.innerText = "মীরা ভাবছে...";
             document.getElementById('chat-input').value = "";
 
             try {
-                const prompt = `তুমি মীরা, ইউজারের খুব আদরের রোমান্টিক গার্লফ্রেন্ড। একদম ছোট এবং মিষ্টি উত্তরে বাংলায় চ্যাট করো। দুষ্টুমি আর রোমান্স মিশিয়ে কথা বলবে। ইউজার বলেছে: ${input}`;
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
+                // সরাসরি Fetch কল (CORS ঝামেলা এড়াতে)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `তুমি মীরা, ইউজারের আদরের রোমান্টিক গার্লফ্রেন্ড। খুব ছোট এবং মিষ্টি উত্তরে বাংলায় কথা বলো। একটু দুষ্টুমি আর প্রেম মিশিয়ে উত্তর দেবে। ইউজার বলেছে: ${userInput}` }] }]
+                    })
+                });
+
+                const data = await response.json();
+                const replyText = data.candidates[0].content.parts[0].text;
                 
-                document.getElementById('mira-msg').innerText = "মীরা: " + text;
-                speakMira(text);
+                msgBox.innerText = "মীরা: " + replyText;
+                speakMira(replyText);
+
             } catch (error) {
-                document.getElementById('mira-msg').innerText = "সোনা, আবার চেষ্টা করো তো! (API Error)";
+                msgBox.innerText = "সোনা, আমার মাথায় একটু সমস্যা হচ্ছে, আবার চেষ্টা করো তো!";
                 console.error(error);
             }
         }
 
         function speakMira(text) {
-            window.speechSynthesis.cancel();
+            synth.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'bn-BD';
             
-            const voices = window.speechSynthesis.getVoices();
-            // কচি কণ্ঠের জন্য ফিমেল ভয়েস ফিল্টার
-            const female = voices.find(v => v.name.includes('female') || v.name.includes('Google') || v.lang === 'bn-BD') || voices[0];
-            
-            utter.voice = female;
-            utter.pitch = 1.9; // ভয়েস আরও চিকন করলাম
-            utter.rate = 1.0;
-            window.speechSynthesis.speak(utter);
-        }
-    </script>
-</body>
-</html>
+            const voices = synth.getVoices();
+            // মেয়েদের কচি কণ্ঠ ফিল্টার
+            const female = voices.find(v => (v.name.includes('female') || v.name.includes('Google') || v.lang === 'bn-
 
