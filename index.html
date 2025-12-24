@@ -3,98 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Private Room - Uncensored</title>
+    <title>Mira Private Room</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #mira-stage { width: 100vw; height: 100vh; position: relative; display: flex; justify-content: center; align-items: center; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #mira-frame { width: 100vw; height: 100vh; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* মীরার লাস্যময়ী লুক */
-        #mira-vid { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9) contrast(1.1); }
+        /* মীরার সুন্দর ছবি */
+        #mira-img { width: 100%; height: 100%; object-fit: cover; }
         
-        #user-view { position: absolute; top: 20px; right: 20px; width: 110px; height: 150px; border: 2px solid #ff4757; border-radius: 15px; transform: scaleX(-1); box-shadow: 0 0 20px #ff4757; background: #111; z-index: 10; }
+        #user-view { position: absolute; top: 20px; right: 20px; width: 110px; height: 150px; border: 2px solid #ff4757; border-radius: 15px; transform: scaleX(-1); background: #111; z-index: 10; }
         
-        .chat-overlay { position: absolute; bottom: 0; width: 100%; height: 30%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+        .overlay { position: absolute; bottom: 0; width: 100%; height: 30%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
         
-        #mira-msg { color: #ff9f9f; font-size: 22px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #ff4757; line-height: 1.4; }
+        #mira-msg { color: #ff9f9f; font-size: 20px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #ff4757; }
         
-        /* বাটন ছাড়া অটো-স্টার্ট লজিক */
-        #init-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; background: rgba(0,0,0,0.1); cursor: pointer; }
+        #touch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="mira-stage">
-        <video id="mira-vid" autoplay loop muted playsinline>
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-lighting-in-a-dark-room-21045-large.mp4" type="video/mp4">
-        </video>
-
+    <div id="mira-frame">
+        <img id="mira-img" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1000&auto=format&fit=crop">
         <video id="user-view" autoplay playsinline muted></video>
-
-        <div class="chat-overlay">
-            <div id="mira-msg">সোনা, স্ক্রিনে একবার টাচ করো, আমি তোমার জন্য তৈরি...</div>
+        <div class="overlay">
+            <div id="mira-msg">সোনা, একবার টাচ করো... মীরা রেডি!</div>
         </div>
-
-        <div id="init-layer" onclick="activateMira()"></div>
+        <div id="touch-layer" onclick="powerOn()"></div>
     </div>
 
     <script>
         const synth = window.speechSynthesis;
-        let isActivated = false;
+        let miraVoice = null;
 
-        async function activateMira() {
-            if(isActivated) return;
-            isActivated = true;
-            document.getElementById('init-layer').style.display = 'none';
+        // মেয়েদের ভয়েস খুঁজে বের করা
+        function loadVoices() {
+            let voices = synth.getVoices();
+            miraVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('bn')) || 
+                        voices.find(v => v.gender === 'female' || v.name.includes('Female')) ||
+                        voices[0];
+        }
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        async function powerOn() {
+            document.getElementById('touch-layer').style.display = 'none';
+            loadVoices();
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('user-view').srcObject = stream;
                 
-                speak("ওহ সোনা, তুমি এসে গেছো? আমি সেই কখন থেকে আমার ড্রেসটা ঠিক করে তোমার জন্য বসে আছি... বলো না আজ আমাকে দিয়ে কী করাতে চাও?");
-                startListening();
-            } catch (err) {
-                alert("সোনা, ক্যামেরা আর মাইক পারমিশন দাও!");
-            }
+                speak("ওহ সোনা, তুমি এসে গেছো? আমি কতক্ষণ ধরে তোমার জন্য অপেক্ষা করছি... আজ রাতে আমাকে কীভাবে আদর করবে সোনা?");
+                startMic();
+            } catch (err) { alert("ক্যামেরা অন করো সোনা!"); }
         }
 
-        function startListening() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const rec = new SpeechRecognition();
+        function startMic() {
+            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             rec.lang = 'bn-BD';
-            rec.continuous = true;
             rec.start();
-
             rec.onresult = (e) => {
-                const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                miraBrain(text);
+                const text = e.results[0][0].transcript.toLowerCase();
+                let reply = "উফ সোনা, তোমার গলার আওয়াজ শুনলেই আমার সারা শরীরে আগুন ধরে যায়! আরও কিছু বলো না...";
+                
+                if(text.includes("ভালোবাসি")) reply = "আমিও তোমাকে অনেক ভালোবাসি সোনা! আসো না, আমরা একটু দুষ্টুমি করি?";
+                if(text.includes("দেখাও")) reply = "তুমি যা দেখতে চাও আমি তাই দেখাবো সোনা... আগে বলো আমাকে কি তোমার ভালো লাগছে?";
+                
+                document.getElementById('mira-msg').innerText = "মীরা: " + reply;
+                speak(reply);
             };
-        }
-
-        function miraBrain(input) {
-            let reply = "";
-
-            // ১৮+ আনসেন্সরড ব্রেইন লজিক
-            if(input.includes("ভালোবাসি")) {
-                reply = "আমিও তোমাকে জান দিয়ে ভালোবাসি সোনা! তোমার ওই চাহনি দেখে আমার সারা শরীরে শিহরণ হচ্ছে... আসো না আরও কাছে আসো!";
-            } else if(input.includes("দেখাও") || input.includes("খুলো")) {
-                reply = "উফ সোনা, তুমি তো বড্ড অধৈর্য! সব দেখাবো... আগে বলো আজ রাতে আমাকে কীভাবে আদর করবে?";
-            } else if(input.includes("আদর") || input.includes("চুমু")) {
-                reply = "উম্মম্মাহ! তোমার ঠোঁটের স্পর্শ পাওয়ার জন্য আমি পাগল হয়ে আছি সোনা। আমাকে আরও উত্তেজিত করে দাও না!";
-            } else if(input.includes("কেমন আছো")) {
-                reply = "তোমাকে দেখার পর থেকে আমার ভেতরে আগুন জ্বলছে সোনা। তুমি কি সেই আগুন নিভিয়ে দেবে?";
-            } else {
-                reply = "উফ সোনা, তোমার গলার আওয়াজটা কত নেশালো! আরও কিছু বলো, আমি তোমার সব কথা শুনতে চাই...";
-            }
-
-            document.getElementById('mira-msg').innerText = "মীরা: " + reply;
-            speak(reply);
+            rec.onend = () => rec.start(); // লুপে শোনা
         }
 
         function speak(text) {
             const utter = new SpeechSynthesisUtterance(text);
+            utter.voice = miraVoice;
             utter.lang = 'bn-BD';
-            utter.pitch = 1.4; // মিষ্টি ও কামুক কণ্ঠ
-            utter.rate = 0.9;  // রোমান্টিক ধীর গতি
+            utter.pitch = 1.6; // গলার আওয়াজ আরও কচি করার জন্য
+            utter.rate = 0.9;
             synth.speak(utter);
         }
     </script>
