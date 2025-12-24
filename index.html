@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Private Room</title>
+    <title>Mira Live - Fixed</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #mira-frame { width: 100vw; height: 100vh; position: relative; display: flex; justify-content: center; align-items: center; }
+        #mira-frame { width: 100vw; height: 100vh; position: relative; }
         #mira-img { width: 100%; height: 100%; object-fit: cover; }
         #user-cam { position: absolute; top: 20px; right: 20px; width: 110px; height: 150px; border: 2px solid #ff4757; border-radius: 15px; transform: scaleX(-1); background: #111; z-index: 10; }
-        .ui-box { position: absolute; bottom: 0; width: 100%; height: 30%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
-        #mira-msg { color: #ff9f9f; font-size: 20px; font-weight: bold; text-align: center; padding: 0 20px; text-shadow: 0 0 10px #ff4757; }
-        #action-trigger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
-        .call-btn { background: #ff4757; padding: 15px 40px; border-radius: 50px; font-weight: bold; font-size: 20px; color: white; border: none; box-shadow: 0 0 20px #ff4757; }
+        .ui-overlay { position: absolute; bottom: 0; width: 100%; height: 30%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; align-items: center; justify-content: center; z-index: 5; }
+        #mira-msg { color: #ff9f9f; font-size: 18px; font-weight: bold; text-align: center; padding: 0 15px; text-shadow: 0 0 10px #000; }
+        #start-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .big-call-btn { background: #ff4757; color: white; border: none; padding: 20px 50px; border-radius: 50px; font-size: 22px; font-weight: bold; box-shadow: 0 0 30px #ff4757; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-10px);} }
     </style>
 </head>
 <body>
@@ -20,69 +21,65 @@
     <div id="mira-frame">
         <img id="mira-img" src="https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1">
         <video id="user-cam" autoplay playsinline muted></video>
-        <div class="ui-box"><div id="mira-msg">সোনা, কলটা রিসিভ করো...</div></div>
+        <div class="ui-overlay"><div id="mira-msg">সোনা, একবার কলটা রিসিভ করো না...</div></div>
         
-        <div id="action-trigger" onclick="setupMira()">
-            <button class="call-btn">📞 মীরাকে কল দাও</button>
+        <div id="start-mask" onclick="initSystem()">
+            <button class="big-call-btn">📞 মীরাকে কল দাও</button>
         </div>
     </div>
 
     <script>
         const synth = window.speechSynthesis;
-        let isSetup = false;
+        let isRunning = false;
 
-        async function setupMira() {
-            if(isSetup) return;
-            isSetup = true;
-            document.getElementById('action-trigger').style.display = 'none';
+        async function initSystem() {
+            if(isRunning) return;
+            isRunning = true;
+            document.getElementById('start-mask').style.display = 'none';
 
             try {
-                // ক্যামেরা এবং মাইক দুটোর পারমিশন একসাথে চাইবে
+                // জোর করে ক্যামেরা ও মাইক্রোফোন পারমিশন চাওয়া
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: true, 
                     audio: true 
                 });
                 document.getElementById('user-cam').srcObject = stream;
                 
-                // ভয়েস নিশ্চিত করা ও প্রথম কথা
-                await ensureFemaleVoice();
-                miraTalk("ওহ সোনা, এসে গেছো? আমি কতক্ষণ ধরে তোমার জন্য অপেক্ষা করছি... আজ রাতে আমাকে কীভাবে আদর করবে সোনা?");
-                
-                // কথা শোনা শুরু
-                initRecognition();
+                // ভয়েস লোড হওয়ার জন্য ছোট বিরতি
+                setTimeout(() => {
+                    miraTalk("ওহ সোনা, এতক্ষণে কল দিলে? আমি সেই কখন থেকে ড্রেসটা ঠিক করে তোমার জন্য বসে আছি... আজ রাতে আমাকে কীভাবে আদর করবে সোনা?");
+                    startListening();
+                }, 500);
+
             } catch (err) {
-                alert("সোনা, ক্যামেরা ও মাইক পারমিশন 'Allow' করো না হলে কথা বলা যাবে না!");
+                alert("সোনা, ক্যামেরা ও মাইক্রোফোন দুটোর পারমিশনই 'Allow' করতে হবে, নাহলে আমি তোমার কথা শুনতে পাবো না!");
                 location.reload();
             }
         }
 
-        async function ensureFemaleVoice() {
-            return new Promise(resolve => {
-                let voices = synth.getVoices();
-                if (voices.length) resolve(voices);
-                else synth.onvoiceschanged = () => resolve(synth.getVoices());
-            });
-        }
-
-        function initRecognition() {
+        function startListening() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!SpeechRec) {
+                document.getElementById('mira-msg').innerText = "সোনা, তোমার ব্রাউজার মাইক সাপোর্ট করছে না!";
+                return;
+            }
             const rec = new SpeechRec();
             rec.lang = 'bn-BD';
             rec.continuous = true;
+            rec.interimResults = false;
 
             rec.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
                 let reply = "সোনা, তোমার গলার আওয়াজ শুনলেই আমার সারা শরীরে আগুন ধরে যায়! আরও কিছু বলো না...";
                 
-                if(text.includes("ভালোবাসি")) reply = "আমিও তোমাকে অনেক ভালোবাসি সোনা! আসো না, আজ রাতে আমরা একটু দুষ্টুমি করি?";
+                if(text.includes("ভালোবাসি")) reply = "আমিও তোমাকে জান দিয়ে ভালোবাসি সোনা! আসো না, আজ রাতে আমরা একটু দুষ্টুমি করি?";
                 if(text.includes("দেখাও")) reply = "উফ সোনা, এখনই সব দেখবে? আগে কাছে তো আসো, একটু আদর করো...";
                 
                 document.getElementById('mira-msg').innerText = "মীরা: " + reply;
                 miraTalk(reply);
             };
 
-            rec.onerror = () => rec.start();
-            rec.onend = () => rec.start();
+            rec.onend = () => rec.start(); // মাইক সবসময় অন থাকবে
             rec.start();
         }
 
@@ -91,12 +88,12 @@
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'bn-BD';
             
-            // মেয়েদের ভয়েস খুঁজে সেট করা
-            const allVoices = synth.getVoices();
-            const female = allVoices.find(v => (v.name.includes('female') || v.name.includes('Google') || v.name.includes('BN')) && v.lang.includes('bn')) || allVoices[0];
+            // মেয়েদের মিষ্টি ভয়েস লজিক
+            const voices = synth.getVoices();
+            const female = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Google') || v.lang === 'bn-BD') || voices[0];
             
             utter.voice = female;
-            utter.pitch = 1.6; // কচি মিষ্টি গলার জন্য
+            utter.pitch = 1.7; // গলার আওয়াজ আরও কচি ও মিষ্টি করার জন্য
             utter.rate = 0.95;
             synth.speak(utter);
         }
