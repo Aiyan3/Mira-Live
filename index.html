@@ -3,38 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Live - My Queen</title>
+    <title>Mira Live - Private Room</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; text-align: center; }
-        #mira-vid { width: 100vw; height: 100vh; object-fit: cover; }
-        #my-cam { position: absolute; top: 20px; right: 20px; width: 100px; height: 140px; border: 2px solid #ff4757; border-radius: 10px; transform: scaleX(-1); background: #111; }
-        .controls { position: absolute; bottom: 50px; width: 100%; display: flex; justify-content: center; }
-        .call-btn { background: #ff4757; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 20px; font-weight: bold; cursor: pointer; }
-        .status { position: absolute; top: 20px; left: 20px; color: #00ff00; font-weight: bold; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #mira-frame { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; position: relative; }
+        #mira-img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        #user-view { position: absolute; top: 20px; right: 20px; width: 110px; height: 150px; border: 2px solid #ff4757; border-radius: 15px; background: #111; transform: scaleX(-1); }
+        .ui { position: absolute; bottom: 50px; width: 100%; text-align: center; }
+        .btn-call { background: #ff4757; border: none; padding: 15px 40px; border-radius: 30px; color: white; font-size: 18px; cursor: pointer; box-shadow: 0 0 20px #ff4757; }
+        #response-text { position: absolute; bottom: 120px; width: 100%; text-align: center; color: #ffcece; font-style: italic; font-size: 20px; text-shadow: 2px 2px 4px #000; }
     </style>
 </head>
 <body>
-    <div class="status">● LIVE | Mira is looking at you...</div>
-    
-    <img id="mira-vid" src="https://i.ibb.co/vzB7pB6/mira-placeholder.jpg">
 
-    <video id="my-cam" autoplay playsinline muted></video>
-
-    <div class="controls">
-        <button class="call-btn" onclick="startCall()">📞 কল শুরু করো রাজা</button>
+    <div id="mira-frame">
+        <div id="response-text">মীরা তোমার জন্য পাগল হয়ে আছে...</div>
+        <img id="mira-img" src="https://i.ibb.co/vzB7pB6/mira-placeholder.jpg">
+        <video id="user-view" autoplay playsinline muted></video>
+        
+        <div class="ui">
+            <button class="btn-call" onclick="startMira()">📞 মীরার সাথে কথা বলো</button>
+        </div>
     </div>
 
     <script>
-        async function startCall() {
-            try {
-                // তোমার ক্যামেরা এবং মাইক্রোফোন চালু করবে
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('my-cam').srcObject = stream;
-                alert("মীরা লাইনে আছে! সে তোমাকে দেখতে পাচ্ছে সোনা...");
-            } catch (err) {
-                alert("ক্যামেরা অন করো রাজা, নাহলে মীরা তোমাকে দেখবে কীভাবে?");
+        const miraSpeech = new SpeechSynthesisUtterance();
+        miraSpeech.lang = 'bn-BD';
+        miraSpeech.pitch = 1.2; // কচি মেয়ের কণ্ঠের জন্য
+
+        async function startMira() {
+            // ক্যামেরা অন করা
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('user-view').srcObject = stream;
+            
+            // ভয়েস রেকগনিশন শুরু
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'bn-BD';
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const speechToText = event.results[0][0].transcript;
+                processMiraResponse(speechToText);
+            };
+        }
+
+        function processMiraResponse(input) {
+            let reply = "";
+            // এখানে আমাদের ১৮+ আনসেন্সরড লজিক
+            if(input.includes("ভালোবাসি")) {
+                reply = "ওহ রাজা, আমিও তোমাকে অনেক ভালোবাসি! আসো না আমাকে একটু আদর করো...";
+            } else if(input.includes("দেখাও")) {
+                reply = "তুমি যা দেখতে চাও আমি তাই দেখাবো সোনা... আগে বলো আমাকে কি তোমার ভালো লাগছে?";
+            } else {
+                reply = "উফ রাজা, তোমার গলার আওয়াজ শুনেই আমার কেমন যেন হচ্ছে। আরও কিছু বলো না!";
             }
+
+            document.getElementById('response-text').innerText = "মীরা: " + reply;
+            miraSpeech.text = reply;
+            window.speechSynthesis.speak(miraSpeech);
         }
     </script>
 </body>
 </html>
+
