@@ -1,59 +1,77 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Live - My Queen</title>
+    <title>Mira Live - Private Call</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #mira-box { width: 100vw; height: 100vh; position: relative; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #2c0000 0%, #000000 100%); }
-        #mira-avatar { width: 100%; height: 100%; object-fit: cover; }
-        #user-view { position: absolute; top: 20px; right: 20px; width: 100px; height: 130px; border: 2px solid #ff4757; border-radius: 15px; transform: scaleX(-1); box-shadow: 0 0 15px #ff4757; }
-        .overlay { position: absolute; bottom: 0; width: 100%; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #mira-text { color: #ff9f9f; font-size: 22px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 5px #000; padding: 0 20px; text-align: center; }
-        .call-btn { background: #ff4757; border: none; padding: 18px 50px; border-radius: 50px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #mira-container { width: 100vw; height: 100vh; position: relative; background: #111; display: flex; justify-content: center; align-items: center; }
+        
+        /* মীরার অবতার ইমেজ */
+        #mira-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        #user-view { position: absolute; top: 20px; right: 20px; width: 110px; height: 150px; border: 2px solid #ff4757; border-radius: 15px; background: #000; transform: scaleX(-1); }
+        
+        .ui { position: absolute; bottom: 50px; width: 100%; text-align: center; }
+        #mira-text { color: #ff9f9f; font-size: 22px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px #000; padding: 0 15px; }
+        .call-btn { background: #ff4757; border: none; padding: 15px 40px; border-radius: 30px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px #ff4757; }
     </style>
 </head>
 <body>
 
-    <div id="mira-box">
-        <img id="mira-avatar" src="https://i.ibb.co/vzB7pB6/mira-placeholder.jpg" alt="Mira">
+    <div id="mira-container">
+        <img id="mira-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=1000" alt="Mira">
+        
         <video id="user-view" autoplay playsinline muted></video>
-        <div class="overlay">
-            <div id="mira-text">মিরা তোমার জন্য পাগল হয়ে আছে...</div>
-            <button class="call-btn" onclick="activateMira()">📞 মীরার সাথে কথা বলো</button>
+
+        <div class="ui">
+            <div id="mira-text">মীরা তোমার জন্য পাগল হয়ে আছে সোনা...</div>
+            <button class="call-btn" onclick="startCall()">📞 মীরার সাথে কথা বলো</button>
         </div>
     </div>
 
     <script>
-        const speech = new SpeechSynthesisUtterance();
-        speech.lang = 'bn-BD';
-        speech.pitch = 1.3; // কচি মেয়ের মিষ্টি কণ্ঠ
+        const miraVoice = new SpeechSynthesisUtterance();
+        miraVoice.lang = 'bn-BD';
+        miraVoice.pitch = 1.3; // মিষ্টি কচি কণ্ঠ
 
-        async function activateMira() {
+        async function startCall() {
             try {
+                // ক্যামেরা এবং মাইক চালু
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('user-view').srcObject = stream;
-                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                
+                // ভয়েস শোনা শুরু
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
                 recognition.lang = 'bn-BD';
                 recognition.start();
 
                 recognition.onresult = (event) => {
-                    const talk = event.results[0][0].transcript;
-                    let reply = "উফ রাজা, তোমার গলার আওয়াজ শুনলেই আমার কেমন যেন লাগে। আরও কিছু বলো না!";
-                    if(talk.includes("ভালোবাসি")) reply = "আমিও তোমাকে অনেক ভালোবাসি সোনা! তুমি ক্যামেরা দিয়ে আমার দিকে ওভাবে তাকালে আমার খুব লজ্জা লাগে...";
-                    if(talk.includes("দেখাও")) reply = "উফ তুমি খুব দুষ্টু হয়ে গেছো রাজা! সব দেখাবো, একটু কাছে আসো...";
-
-                    document.getElementById('mira-text').innerText = "মীরা: " + reply;
-                    speech.text = reply;
-                    window.speechSynthesis.speak(speech);
+                    const userSpeech = event.results[0][0].transcript;
+                    handleMira(userSpeech);
                 };
             } catch (err) {
-                alert("রাজা, ক্যামেরা না খুললে মীরা তোমাকে দেখবে কীভাবে?");
+                alert("সোনা, ক্যামেরা পারমিশন না দিলে মীরা তোমাকে দেখবে কীভাবে?");
             }
+        }
+
+        function handleMira(text) {
+            let response = "";
+            if(text.includes("ভালোবাসি")) {
+                response = "আমিও তোমাকে অনেক ভালোবাসি সোনা! তুমি ক্যামেরায় ওভাবে তাকালে আমার খুব লজ্জা লাগে...";
+            } else if(text.includes("দেখাও")) {
+                response = "উফ সোনা, তুমি খুব দুষ্টু হয়ে গেছো! সব দেখাবো, একটু কাছে আসো না...";
+            } else {
+                response = "উফ সোনা, তোমার গলার আওয়াজ শুনলেই আমার কেমন যেন লাগে। আরও কিছু বলো না!";
+            }
+
+            document.getElementById('mira-text').innerText = "মীরা: " + response;
+            miraVoice.text = response;
+            window.speechSynthesis.speak(miraVoice);
         }
     </script>
 </body>
 </html>
+
